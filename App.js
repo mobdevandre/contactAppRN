@@ -7,6 +7,8 @@ export default function App() {
   const [listContact, setListContact] = useState([]);
   const [textInputName, setTextInputName] = useState("");
   const [textInputNumber, setTextInputNumber] = useState("");
+  const [updateActive, setUpdateActive] = useState(false);
+  const [updateName, setUpdateName] = useState("");
 
   async function addNew() {
     // let newArray = listContact;
@@ -24,6 +26,8 @@ export default function App() {
       );
 
       getList();
+      setTextInputName("");
+      setTextInputNumber("");
     }
   }
 
@@ -50,17 +54,39 @@ export default function App() {
     getList();
   }
 
+  async function update(user, number) {
+    setUpdateActive(true);
+    setTextInputName(user);
+    setTextInputNumber(number.toString());
+    setUpdateName(user);
+  }
+
+  async function actionUpdate() {
+    if (textInputName == "" || textInputNumber == "") {
+    } else {
+      const db = await SQLite.openDatabaseAsync("databaseApp");
+
+      await db.runAsync(
+        "UPDATE contact SET value = ?, intValue = ?  WHERE value = ?",
+        textInputName,
+        textInputNumber,
+        updateName
+      );
+
+      getList();
+      setTextInputName("");
+      setTextInputNumber("");
+      setUpdateActive(false);
+    }
+  }
+
   useEffect(() => {
     async function setup() {
       const db = await SQLite.openDatabaseAsync("databaseApp");
 
-      // await db.execAsync(`
-      //   PRAGMA journal_mode = WAL;
-      //   CREATE TABLE IF NOT EXISTS contact (id INTEGER PRIMARY KEY NOT NULL, value TEXT NOT NULL, intValue INTEGER);
-      //   INSERT INTO contact (value, intValue) VALUES ('Andre', 123);
-      //   INSERT INTO contact (value, intValue) VALUES ('Pedro', 456);
-      //   INSERT INTO contact (value, intValue) VALUES ('Fernando', 789);
-      //   `);
+      await db.execAsync(`
+        PRAGMA journal_mode = WAL;
+        CREATE TABLE IF NOT EXISTS contact (id INTEGER PRIMARY KEY NOT NULL, value TEXT NOT NULL, intValue INTEGER);`);
 
       getList();
     }
@@ -70,21 +96,31 @@ export default function App() {
     <View style={styles.container}>
       <Text>Name</Text>
       <TextInput
+        value={textInputName}
         style={styles.input}
         onChangeText={setTextInputName}
       ></TextInput>
       <Text>Number</Text>
       <TextInput
+        value={textInputNumber}
         style={styles.input}
         onChangeText={setTextInputNumber}
       ></TextInput>
-      <Button title="Add" onPress={() => addNew()} />
+      {updateActive ? (
+        <Button title="Update" onPress={() => actionUpdate()} />
+      ) : (
+        <Button title="Add" onPress={() => addNew()} />
+      )}
       {listContact.map((item, index) => {
         return (
           <View key={index}>
             <Text>{item.name}</Text>
             <Text>{item.number}</Text>
             <Button title="Remove" onPress={() => removeList(item.name)} />
+            <Button
+              title="Update"
+              onPress={() => update(item.name, item.number)}
+            />
           </View>
         );
       })}
